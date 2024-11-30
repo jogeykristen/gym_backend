@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const secret = "your_jwt_secret";
+const secret = "secret";
 
 module.exports.encode = function (user) {
   return jwt.sign({ userId: user.id }, secret, { expiresIn: "1h" });

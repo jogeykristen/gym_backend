@@ -4,12 +4,16 @@ const { Sequelize } = require("sequelize");
 const sequelize = require("../config/config");
 const User = require("../models/user");
 const userRoutes = require("../routes/userRoutes");
+const planRoutes = require("../routes/planRouter");
+const customerRoutes = require("../routes/customerRoutes")
 
 const express = require("express");
 const app = express();
 
 app.use(express.json());
 app.use("/user", userRoutes);
+app.use("/plan",planRoutes);
+app.use("/customer",customerRoutes);
 
 const syncDatabase = async () => {
   try {

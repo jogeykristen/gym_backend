@@ -1,7 +1,8 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
 
-const User = require("../models/user");
+const { User } = require("../models");
 const responseHelper = require("../helpers/responseHelper");
 const constants = require("../helpers/constant");
 const { check, validationResult } = require("express-validator");
@@ -55,6 +56,87 @@ exports.userCreate = async (req, res) => {
   }
 };
 
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return responseHelper(
+        res,
+        constants.statusCode.unprocessableEntity,
+        "Validation failed",
+        errors.array()
+      );
+    }
+
+    const user = await User.findOne({where:{email:email}})
+    if(!user){
+      return responseHelper(res, constants.statusCode.notFound, constants.messages.userNotFound)
+    }
+    console.log("user ===== ",user)
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if(!isValidPassword){
+      return responseHelper(res, constants.statusCode.notFound, constants.messages.invalidPassword)
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      "secret", 
+      { expiresIn: "24h" } 
+    );
+    return responseHelper(
+      res,
+      constants.statusCode.successCode,
+      constants.messages.userCreatedSuccess,
+      {
+        user:{
+          id:user.id,
+          name:user.name,
+          email:user.email,
+        },
+        token
+      }
+    );
+  }catch (error) {
+    console.error("Error creating user:", error);
+    return responseHelper(
+      res,
+      constants.statusCode.serverError,
+      constants.messages.loginError
+    );
+  }
+}
+
+exports.getUsers = async(req, res)=>{
+  try {
+    console.log("hi")
+    const user = req.user.userId
+    console.log("id === ",user)
+    
+    const users = await User.findAll({where:{id:user},
+    attributes:{exclude:["password"]}
+    })
+
+    if(!users){
+      return responseHelper(res, constants.statusCode.notFound, constants.messages.userNotFound)
+    }
+    return responseHelper(
+      res,
+      constants.statusCode.successCode,
+      constants.messages.userCreatedSuccess,
+      users
+    )
+  }catch (error) {
+    console.error("Error creating user:", error);
+    return responseHelper(
+      res,
+      constants.statusCode.serverError,
+      constants.messages.loginError
+    );
+  }
+}
+
 exports.validate = (method) => {
   switch (method) {
     case "createUser": {
@@ -78,6 +160,19 @@ exports.validate = (method) => {
           .isLength({ min: 10, max: 10 })
           .withMessage("Mobile number must be exactly 10 digits"),
       ];
+    }
+    case "login":{
+      return [
+        check("email")
+          .notEmpty()
+          .withMessage("Email is required")
+          .isEmail(),
+          check("password")
+          .notEmpty()
+          .withMessage("Password is required")
+          .isLength({ min: 6 })
+          .withMessage("Password must be at least 6 characters long"),
+      ]
     }
   }
 };

@@ -15,6 +15,9 @@ const messages = {
   userCreatedError: "Some error occurred while creating the user details",
   emailRequired: "Email is required",
   passwordRequired: "Password is required",
+  userNotFound:"no users found with this mail id",
+  invalidPassword:"the password is incorrect",
+  loginError: "Some error occurred while login",
 };
 
 module.exports = {
