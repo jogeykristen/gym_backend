@@ -82,9 +82,16 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      "secret", 
+      "access_secret", 
       { expiresIn: "24h" } 
     );
+    const refreshToken = jwt.sign(
+      { userId: user.id, email: user.email },
+      "refresh_secret",
+      { expiresIn: "7d" } 
+    );
+    user.refreshToken = refreshToken;
+    await user.save();
     return responseHelper(
       res,
       constants.statusCode.successCode,
@@ -95,7 +102,8 @@ exports.login = async (req, res) => {
           name:user.name,
           email:user.email,
         },
-        token
+        token,
+        refreshToken
       }
     );
   }catch (error) {
@@ -136,6 +144,74 @@ exports.getUsers = async(req, res)=>{
     );
   }
 }
+
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return responseHelper(
+        res,
+        constants.statusCode.unauthorized,
+        "Refresh token is required."
+      );
+    }
+
+    jwt.verify(refreshToken, "refresh_secret", (err, decoded) => {
+      if (err) {
+        return responseHelper(
+          res,
+          constants.statusCode.forbidden,
+          "Invalid refresh token."
+        );
+      }
+
+      const newAccessToken = jwt.sign(
+        { userId: decoded.userId, email: decoded.email },
+        "access_secret",
+        { expiresIn: "1h" } // Access token expires in 1 hour
+      );
+
+      return responseHelper(res, constants.statusCode.successCode, "Token refreshed successfully", {
+        accessToken: newAccessToken,
+      });
+    });
+  } catch (error) {
+    console.error("Error during token refresh:", error);
+    return responseHelper(
+      res,
+      constants.statusCode.serverError,
+      "Token refresh failed."
+    );
+  }
+};
+
+// Logout
+exports.logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return responseHelper(
+        res,
+        constants.statusCode.unauthorized,
+        "Refresh token is required for logout."
+      );
+    }
+
+    // Optionally, add logic to invalidate refresh tokens by using a token store or database.
+
+    return responseHelper(res, constants.statusCode.successCode, "Logout successful.");
+  } catch (error) {
+    console.error("Error during logout:", error);
+    return responseHelper(
+      res,
+      constants.statusCode.serverError,
+      "Logout failed."
+    );
+  }
+};
+
 
 exports.validate = (method) => {
   switch (method) {

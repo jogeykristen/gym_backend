@@ -1,4 +1,5 @@
 const { DataTypes } = require("sequelize");
+const { refreshToken } = require("../middleware/auth");
 
 module.exports = (sequelize) => {
   const User = sequelize.define("User", {
@@ -17,6 +18,10 @@ module.exports = (sequelize) => {
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    refreshToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   });
 
