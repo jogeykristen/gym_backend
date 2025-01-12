@@ -198,6 +198,15 @@ exports.logout = async (req, res) => {
         "Refresh token is required for logout."
       );
     }
+    console.log("id === ",req.user)
+    const user = req.user.userId
+    console.log("id === ",user)
+    
+    const users = await User.findOne({where:{id:user}})
+    console.log("users ============== ",users)
+    console.log("users ============== ",users.refreshToken)
+    users.refreshToken = null;
+    await users.save();
 
     // Optionally, add logic to invalidate refresh tokens by using a token store or database.
 
